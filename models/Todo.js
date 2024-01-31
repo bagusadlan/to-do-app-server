@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 const todoSchema = new mongoose.Schema({
-  user: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
     ref: 'User'

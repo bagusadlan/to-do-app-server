@@ -1,54 +1,27 @@
-const { User } = require("../models/User")
-const { Todo } = require("../models/Todo")
-// const {
-//   setQueryPagination,
-//   getPagingData
-// } = require('../helper/modulePartials')
-// const { successPagination } = require('../helper/responseApi')
+const Todo = require("../models/Todo")
 
 module.exports = {
     async createTodo(req, res) {
         try {
-            const report = await Todo.create({
+            const task = await Todo.create({
                 userId: req.body.userId,
-                nama: req.body.nama,
-                email: req.body.email,
-                judul: req.body.judul,
-                isi: req.body.isi,
+                title: req.body.title,
+                description: req.body.description
             });
     
-            res.status(201).json({ message: "Berhasil mengajukan pengaduan", data: report });
+            res.status(201).json({ message: "Success add task", data: task });
         } catch (error) {
-            console.log(error);
-            res.status(500).json({ message: "Gagal mengajukan pengaduan" });
+            res.status(500).json({ message: "Failed add task" });
         }
     },
     
     async getAllTodo(req, res) {
         try {
-            const {
-              page,
-              limit,
-              offset,
-              sortBy,
-              sortDesc,
-              where
-            } = setQueryPagination(req)
-    
-            const results = await Pengaduan.findAndCountAll({
-                where,
-                limit,
-                offset,
-                order: [
-                    [sortBy, sortDesc]
-                ]
-            })
-
-            const { data, pageData } = getPagingData(results, page, limit)
-    
-            res.json(successPagination('pengaduan', data, pageData))
+            const tasks = await Todo.find({
+                userId: req.params.userId
+            }).sort({ _id: -1 })
+            res.json({ message: 'Success get all tasks', data: tasks})
         } catch (error) {
-            console.log(error);
             res.status(500).json({ message: "Pengaduan gagal ditampilkan" });
         }
     },
@@ -68,7 +41,6 @@ module.exports = {
     
             res.status(200).json(report);
         } catch (error) {
-            console.log(error);
             res.status(500).json({ message: "Report gagal ditampilkan" });
         }
     },
@@ -94,90 +66,78 @@ module.exports = {
     
             res.status(200).json({ message: "Report berhasil diupdate" });
         } catch (error) {
-            console.log(error);
             res.status(500).json({ message: "Report gagal diupdate" });
         }
     },
     
     async deleteTodo(req, res) {
         try {
-            const report = await Pengaduan.findOne({
-                where: {
-                    id_report: req.params.id_report,
-                },
-            });
-    
-            if (!report) {
-                res.status(400).json({ message: "Report tidak dapat ditemukan" });
-                return;
-            }
-    
-            await Pengaduan.destroy({
-                where: {
-                    id_report: req.params.id_report,
-                },
-            });
-    
-            res.status(200).json({ message: "Report berhasil dihapus" });
+            const { id } = req.params
+            const filter = { _id: id }
+            const task = await Todo.deleteOne(filter)
+
+            res.status(200).json({
+                message: 'Success delete task!',
+                data: task
+            })
         } catch (error) {
-            console.log(error);
-            res.status(500).json({ message: "Report gagal dihapus" });
+            res.status(500).json({
+                message: 'Failed delete task'
+            })
         }
     },
-    // aproval
+
     async todoTask(req, res) {
         try {
-            const report = await Pengaduan.findOne({
-                where: {
-                    id_report: req.params.id_report,
-                },
-            });
-    
-            if (!report) {
-                res.status(400).json({ message: "Report tidak dapat ditemukan" });
-                return;
-            }
-    
-            await Pengaduan.update(req.body, {
-                where: {
-                    id_report: req.params.id_report,
-                },
-            });
-    
-            res.status(200).json({ message: "Report berhasil diupdate" });
+            const { id } = req.params
+            const filter = { _id: id }
+            const update = { status: 'TODO' }
+            const task = await Todo.findOneAndUpdate(filter, update)
+
+            res.status(200).json({
+                message: 'Success change status to todo',
+                data: task
+            })
         } catch (error) {
-            console.log(error);
-            res.status(500).json({ message: "Report gagal diupdate" });
+            res.status(500).json({
+                message: 'Failed change status'
+            })
         }
     },
-    // reject
+
     async ongoingTask(req, res) {
         try {
-            const report = await Pengaduan.findOne({
-                where: {
-                    id_report: req.params.id_report,
-                },
-            });
-    
-            if (!report) {
-                res.status(400).json({ message: "Report tidak dapat ditemukan" });
-                return;
-            }
-    
-            await Pengaduan.update(req.body, {
-                where: {
-                    id_report: req.params.id_report,
-                },
-            });
-    
-            res.status(200).json({ message: "Report berhasil diupdate" });
+            const { id } = req.params
+            const filter = { _id: id }
+            const update = { status: 'ONGOING' }
+            const task = await Todo.findOneAndUpdate(filter, update)
+
+            res.status(200).json({
+                message: 'Success change status to ongoing',
+                data: task
+            })
         } catch (error) {
-            console.log(error);
-            res.status(500).json({ message: "Report gagal diupdate" });
+            res.status(500).json({
+                message: 'Failed change status'
+            })
         }
     },
     
     async doneTask(req, res) {
+        try {
+            const { id } = req.params
+            const filter = { _id: id }
+            const update = { status: 'DONE' }
+            const task = await Todo.findOneAndUpdate(filter, update)
 
+            res.status(200).json({
+                message: 'Success change status to done',
+                data: task
+            })
+        } catch (error) {
+            res.status(500).json({
+                message: 'Failed change status'
+            })
+        }
     }
 }
