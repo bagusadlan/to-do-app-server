@@ -18,7 +18,7 @@ app.use(cookieParser())
 app.use(
   cors({
     credentials: true,
-    origin: 'https://to-do-app-bagus.vercel.app'
+    origin: 'https://to-do-app-bagus.vercel.app/'
   })
 )
 
