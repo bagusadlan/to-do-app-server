@@ -6,13 +6,11 @@ const {
   getProfile
 } = require('../controllers/AuthController.js')
 
-// const { JWTMiddleware } = require('../middleware/JWTMiddleware.js')
-
 const router = express.Router()
 
 router.post('/register', register)
-router.post('/', login)
-router.post('/:id', logout)
-router.get('/:id', getProfile)
+router.post('/login', login)
+router.post('/logout', logout)
+router.get('/profile', getProfile)
 
 module.exports = router

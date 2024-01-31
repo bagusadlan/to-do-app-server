@@ -1,10 +1,6 @@
+const jwt = require('jsonwebtoken')
 const User = require('../models/User')
-const Todo = require('../models/Todo')
-// const {
-//   setQueryPagination,
-//   getPagingData
-// } = require('../helper/modulePartials')
-// const { successPagination } = require('../helper/responseApi')
+const jwtSecret = process.env.JWT_SECRET
 
 module.exports = {
   async register(req, res) {
@@ -26,82 +22,126 @@ module.exports = {
 
       const userResponse = {
         username: user.username,
-        email: user.email
+        email: user.email,
+        id: user.id
       }
 
-      res
-        .status(201)
-        .json({ message: 'Register successfull', data: userResponse })
+      if (user) {
+        jwt.sign(
+          {
+            username,
+            email,
+            id: user.id
+          },
+          jwtSecret,
+          {},
+          (err, token) => {
+            if (err) throw err
+
+            res.cookie('token', token).status(201).json({
+              message: 'Register successfull',
+              data: userResponse,
+              token
+            })
+          }
+        )
+      }
     } catch (error) {
-      console.log(error)
       res.status(500).json({ message: 'Register failed' })
     }
   },
 
   async login(req, res) {
     try {
-      const { page, limit, offset, sortBy, sortDesc, where } =
-        setQueryPagination(req)
+      const { email, password } = req.body
 
-      const results = await Pengaduan.findAndCountAll({
-        where,
-        limit,
-        offset,
-        order: [[sortBy, sortDesc]]
-      })
+      const user = await User.findOne({ email })
 
-      const { data, pageData } = getPagingData(results, page, limit)
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: 'User not found'})
+      }
 
-      res.json(successPagination('pengaduan', data, pageData))
+      const isPasswordValid = await user.comparePassword(password)
+
+      if (!isPasswordValid) {
+        return res
+          .status(401)
+          .json({ message: 'Password is wrong!' })
+      }
+
+      const userParse = {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      }
+
+      if (user) {
+        jwt.sign(
+          userParse,
+          jwtSecret,
+          {},
+          (err, token) => {
+            if (err) throw err
+
+            res.cookie('token', token).json({
+              message: `Hello ${email}!. Welcome to ToDoApp`,
+              data: userParse,
+              token
+            })
+          }
+        )
+      }
     } catch (error) {
-      console.log(error)
-      res.status(500).json({ message: 'Pengaduan gagal ditampilkan' })
+      res.status(500).json({
+        message: error.message
+      })
     }
   },
 
   async logout(req, res) {
     try {
-      const report = await Pengaduan.findOne({
-        where: {
-          id_report: req.params.id
-        }
+      res.cookie('token', '').send({
+        message: 'logout success'
       })
-
-      if (!report) {
-        res.status(400).json({ message: 'Report tidak dapat ditemukan' })
-        return
-      }
-
-      res.status(200).json(report)
     } catch (error) {
-      console.log(error)
-      res.status(500).json({ message: 'Report gagal ditampilkan' })
+      res.status(501).send({
+        message: 'logout failed'
+      })
     }
   },
 
   async getProfile(req, res) {
     try {
-      const report = await Pengaduan.findOne({
-        where: {
-          id_report: req.params.id_report
-        }
-      })
+      const { token } = req.cookies
 
-      if (!report) {
-        res.status(400).json({ message: 'Report tidak dapat ditemukan' })
-        return
+      if (token) {
+        jwt.verify(
+          token,
+          jwtSecret,
+          {},
+          async (err, userData) => {
+            if (err) new Error(err)
+            const user = await User.findById(userData.id)
+
+            res.json({
+              message: 'Success get profile',
+              data: {
+                email: user.email,
+                username: user.username,
+                id: user.id
+              }
+            })
+          }
+        )
+      } else {
+        res.send(null)
       }
-
-      await Pengaduan.update(req.body, {
-        where: {
-          id_report: req.params.id_report
-        }
-      })
-
-      res.status(200).json({ message: 'Report berhasil diupdate' })
     } catch (error) {
-      console.log(error)
-      res.status(500).json({ message: 'Report gagal diupdate' })
+      res.status(500).send({
+        error: error.message
+      })
     }
   }
 }
